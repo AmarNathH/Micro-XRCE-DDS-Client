@@ -4,13 +4,12 @@
 
 bool uxr_init_udp_platform(uxrUDPPlatform *platform, const char *ip, uint16_t port)
 {
-  return initUDPESP8266(platform->udp_instance, port);
+  return initUDPESP8266(platform->udp_instance, ip , port); 
 }
 
 bool uxr_close_udp_platform(uxrUDPPlatform *platform)
 {
   (void)(platform);
-
   return closeUDPESP8266();
 }
 
