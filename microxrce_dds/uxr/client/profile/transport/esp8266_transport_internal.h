@@ -10,6 +10,7 @@ extern "C"
 {
 #endif
 
+// For UDP Transport
 bool initUDPESP8266(void *udp_instance, const char *ip, uint16_t port);
 bool closeUDPESP8266();
 size_t writeUDPESP8266(const uint8_t *buf, size_t len);

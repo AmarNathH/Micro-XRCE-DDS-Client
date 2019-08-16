@@ -46,6 +46,9 @@ typedef struct uxrUDPTransportDatagram
 #elif defined(PLATFORM_NAME_WINDOWS)
     uint8_t buffer[UXR_UDP_TRANSPORT_MTU_DATAGRAM];
     WSAPOLLFD poll_fd;
+#elif defined(PLATFORM_NAME_ESP8266)
+    uint8_t buffer[UXR_UDP_TRANSPORT_MTU_DATAGRAM];
+    void* udp_instance;
 #endif
 
 } uxrUDPTransportDatagram;

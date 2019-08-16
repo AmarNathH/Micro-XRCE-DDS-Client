@@ -1,3 +1,4 @@
+
 #include <uxr/client/profile/discovery/discovery.h>
 #include <uxr/client/core/session/object_id.h>
 #include <uxr/client/core/session/stream/seq_num.h>
@@ -33,7 +34,7 @@ static bool process_info(CallbackData* callback, TransportLocator* transport);
 //==================================================================
 //                             PUBLIC
 //==================================================================
-
+#if defined(PLATFORM_NAME_LINUX) || defined(PLATFORM_NAME_WINDOWS)
 void uxr_discovery_agents_default(
         uint32_t attempts,
         int period,
@@ -83,6 +84,62 @@ void uxr_discovery_agents(
         }
     }
 }
+#endif // PLATFORM_NAME_LINUX PLATFORM_NAME_WINDOWS
+
+#if defined(PLATFORM_NAME_ESP8266)
+void uxr_discovery_agents_default(
+        uint32_t attempts,
+        int period,
+        uxrOnAgentFound on_agent_func,
+        void* args, void* udp_instance)
+{
+    uxrAgentAddress multicast = {MULTICAST_DEFAULT_IP, MULTICAST_DEFAULT_PORT};
+    uxr_discovery_agents(attempts, period, on_agent_func, args, &multicast, 1, udp_instance);
+}
+
+void uxr_discovery_agents(
+        uint32_t attempts,
+        int period,
+        uxrOnAgentFound on_agent_func,
+        void* args,
+        const uxrAgentAddress* agent_list,
+        size_t agent_list_size, void * udp_instance)
+{
+    CallbackData callback;
+    callback.on_agent = on_agent_func;
+    callback.args = args;
+
+    uint8_t output_buffer[UXR_UDP_TRANSPORT_MTU_DATAGRAM];
+    ucdrBuffer ub;
+    ucdr_init_buffer(&ub, output_buffer, UXR_UDP_TRANSPORT_MTU_DATAGRAM);
+    write_get_info_message(&ub);
+    size_t message_length = ucdr_buffer_length(&ub);
+
+    uxrUDPTransportDatagram transport;
+    transport.udp_instance = udp_instance;
+
+    if(uxr_init_udp_transport_datagram(&transport))
+    {
+        for(uint32_t a = 0; a < attempts; ++a)
+        {
+            for(size_t i = 0; i < agent_list_size; ++i)
+            {
+                (void) uxr_udp_send_datagram_to(&transport, output_buffer, message_length, agent_list[i].ip, agent_list[i].port);
+                UXR_DEBUG_PRINT_MESSAGE(UXR_SEND, output_buffer, message_length, 0);
+            }
+
+            int64_t timestamp = uxr_millis();
+            int poll = period;
+            while(0 < poll)
+            {
+                (void) listen_info_message(&transport, poll, &callback);
+                poll -= (int)(uxr_millis() - timestamp);
+            }
+        }
+    }
+}
+#endif // PLATFORM_NAME_ESP8266
+
 
 //==================================================================
 //                             INTERNAL
