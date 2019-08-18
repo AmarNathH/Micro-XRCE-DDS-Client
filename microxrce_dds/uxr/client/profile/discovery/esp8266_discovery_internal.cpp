@@ -5,7 +5,6 @@
 #include <WiFiUdp.h>
 #include <lwip/inet.h>
 
-
 //******* INTERNAL *************
 int isValidIp4(const char *str)
 {
@@ -14,12 +13,10 @@ int isValidIp4(const char *str)
   int accum = 0; /* Accumulator for segment. */
 
   /* Catch NULL pointer. */
-
-  if (str == NULL)
+  if (str == nullptr)
     return 0;
 
   /* Process every character in string. */
-
   while (*str != '\0')
   {
     /* Segment changeover. */
@@ -67,13 +64,10 @@ int isValidIp4(const char *str)
     return 0;
 
   /* Address okay. */
-
   return 1;
 }
 
 //*****************EXTERNAL************************
-
-static WiFiUDP *p_wifi_udp;
 
 // For UDP Discovery
 bool initDiscoveryESP8266(void *udp_instance)
@@ -85,26 +79,30 @@ bool initDiscoveryESP8266(void *udp_instance)
     return false;
   }
 
-  p_wifi_udp = ((WiFiUDP *)(udp_instance));
+  ((WiFiUDP *)(udp_instance));
+
   rv = true;
+
   return rv;
 }
 
-bool sendDiscoveryESP8266(const uint8_t *buf, size_t len, const char *ip, uint16_t port)
+bool sendDiscoveryESP8266(void *udp_instance, const uint8_t *buf, size_t len, const char *ip, uint16_t port)
 {
   // printf("Running Discovery send\n");
   bool rv = true;
 
-  p_wifi_udp->begin(port);
+  ((WiFiUDP *)(udp_instance))->begin(port);
 
-  if (isValidIp4(ip))
+  // printf("Before Using ip: %s\n", ip);
+
+  if (isValidIp4(ip)) // Error at this point after first attempt
   {
     ssize_t tx_len;
     // printf("IP:%s PORT:%i\n", ip, port);
 
-    p_wifi_udp->beginPacket(ip, port);
-    tx_len = p_wifi_udp->write(buf, len);
-    p_wifi_udp->endPacket();
+    ((WiFiUDP *)(udp_instance))->beginPacket(ip, port);
+    tx_len = ((WiFiUDP *)(udp_instance))->write(buf, len);
+    ((WiFiUDP *)(udp_instance))->endPacket();
 
     // printf("Data sent:%i\n", buf);
 
@@ -112,10 +110,11 @@ bool sendDiscoveryESP8266(const uint8_t *buf, size_t len, const char *ip, uint16
       rv = false;
   }
 
+  // printf("After using ip: %s\n", ip);
   return rv;
 }
 
-bool readDiscoveryESP8266(uint8_t *udp_buffer, uint8_t **buf, size_t *len, int timeout)
+bool readDiscoveryESP8266(void *udp_instance, uint8_t *udp_buffer, uint8_t **buf, size_t *len, int timeout)
 {
   // printf("Running Discovery read\n");
   uint8_t rv = 0;
@@ -123,8 +122,8 @@ bool readDiscoveryESP8266(uint8_t *udp_buffer, uint8_t **buf, size_t *len, int t
 
   while (rv <= 0 && (millis() - pre_time < (uint32_t)timeout))
   {
-    p_wifi_udp->parsePacket();
-    rv = p_wifi_udp->available();
+    ((WiFiUDP *)(udp_instance))->parsePacket();
+    rv = ((WiFiUDP *)(udp_instance))->available();
   }
 
   if (rv > *len)
@@ -134,18 +133,20 @@ bool readDiscoveryESP8266(uint8_t *udp_buffer, uint8_t **buf, size_t *len, int t
 
   if (0 < rv)
   {
-    ssize_t bytes_received = p_wifi_udp->read(*buf, *len);
+    ssize_t bytes_received = ((WiFiUDP *)(udp_instance))->read(udp_buffer, *len);
     // printf("Bytes received:%i\n", bytes_received);
     *len = (size_t)bytes_received;
+    *buf = udp_buffer;
   }
 
   return rv;
 }
 
-bool closeDiscoveryESP8266()
+bool closeDiscoveryESP8266(void *udp_instance)
 {
   // printf("Running Discovery close\n");
-  p_wifi_udp->stop();
+
+  ((WiFiUDP *)(udp_instance))->stop();
   return true;
 }
 

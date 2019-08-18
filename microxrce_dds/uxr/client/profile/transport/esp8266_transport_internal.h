@@ -12,9 +12,9 @@ extern "C"
 
 // For UDP Transport
 bool initUDPESP8266(void *udp_instance, const char *ip, uint16_t port);
-bool closeUDPESP8266();
-size_t writeUDPESP8266(const uint8_t *buf, size_t len);
-size_t readUDPESP8266(uint8_t *buf, size_t len, int timeout);
+bool closeUDPESP8266(void *udp_instance);
+size_t writeUDPESP8266(void *udp_instance, const uint8_t *buf, size_t len);
+size_t readUDPESP8266(void *udp_instance, uint8_t *buf, size_t len, int timeout);
 
 #ifdef __cplusplus
 }
